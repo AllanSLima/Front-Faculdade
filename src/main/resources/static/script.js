@@ -46,18 +46,22 @@ function renderizarTabela(alunos) {
         const statusText = aluno.ativo ? 'Ativo' : 'Inativo';
 
         tr.innerHTML = `
-            <td>${aluno.id}</td>
-            <td>${aluno.nomeCompleto}</td>
-            <td>${aluno.ra}</td>
-            <td>${aluno.email}</td>
-            <td>R$ ${aluno.mensalidade.toFixed(2)}</td>
-            <td><span class="${statusClass}">${statusText}</span></td>
-            <td>
-                <button class="btn btn-sm btn-warning" onclick="editarAluno('${aluno.ra}')">Editar</button>
-                <button class="btn btn-sm btn-danger" onclick="desativarAluno('${aluno.ra}')">Desativar</button>
-                <button class="btn btn-sm btn-info" onclick="abrirModalBoleto(${aluno.id}, ${aluno.mensalidade.toFixed(2)})">Gerar Boleto</button>
-            </td>
-        `;
+    <td>${aluno.id}</td>
+    <td>${aluno.nomeCompleto}</td>
+    <td>${aluno.ra}</td>
+    <td>${aluno.email}</td>
+    <td>R$ ${aluno.mensalidade.toFixed(2)}</td>
+    <td><span class="${statusClass}">${statusText}</span></td>
+    <td>
+        <button class="btn btn-sm btn-warning" onclick="editarAluno('${aluno.ra}')">Editar</button>
+        ${aluno.ativo
+                ? `<button class="btn btn-sm btn-danger" onclick="desativarAluno('${aluno.ra}')">Desativar</button>`
+                : `<button class="btn btn-sm btn-success" onclick="ativarAluno('${aluno.ra}')">Ativar</button>`
+            }
+        <button class="btn btn-sm btn-info" onclick="abrirModalBoleto(${aluno.id}, ${aluno.mensalidade.toFixed(2)})">Gerar Boleto</button>
+    </td>
+`;
+
 
         tbody.appendChild(tr);
     });
@@ -214,6 +218,28 @@ function desativarAluno(ra) {
 }
 
 
+function ativarAluno(ra) {
+    if (confirm('Deseja realmente ativar este aluno?')) {
+        fetch(`${API_URL}/reativar/${ra}`, {
+            method: 'PUT'
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert('Aluno ativado com sucesso!');
+                    listarAlunos();
+                } else {
+                    alert('Erro ao ativar aluno!');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao ativar aluno:', error);
+                alert('Erro ao ativar aluno!');
+            });
+    }
+}
+
+
+
 // Função para carregar alunos no select
 function carregarAlunosNoSelect() {
     fetch('http://localhost:8080/alunos') // Ajuste para sua rota correta da API de alunos
@@ -282,38 +308,38 @@ function abrirModalBoleto(alunoId, valorMensalidade) {
 
 
 
-document.getElementById('formModalBoleto').addEventListener('submit', function(event) {
-  event.preventDefault();
+document.getElementById('formModalBoleto').addEventListener('submit', function (event) {
+    event.preventDefault();
 
-  const alunoId = document.getElementById('modalAlunoId').value;
-  const valor = parseFloat(document.getElementById('modalValor').value);
-  const vencimento = document.getElementById('modalVencimento').value;
+    const alunoId = document.getElementById('modalAlunoId').value;
+    const valor = parseFloat(document.getElementById('modalValor').value);
+    const vencimento = document.getElementById('modalVencimento').value;
 
-  fetch(`http://localhost:8080/cobrancas?alunoId=${alunoId}&valor=${valor}&vencimento=${vencimento}`, {
-    method: 'POST'
-  })
-    .then(res => {
-      if (res.ok) {
-        return res.json().then(data => {
-          alert('Boleto gerado com sucesso!');
-          listarTodasCobrancas();
-
-          var modalEl = document.getElementById('modalGerarBoleto');
-          var modal = bootstrap.Modal.getInstance(modalEl);
-          modal.hide();
-
-          document.getElementById('modalVencimento').value = '';
-        });
-      } else {
-        return res.text().then(text => {
-          alert(text);
-        });
-      }
+    fetch(`http://localhost:8080/cobrancas?alunoId=${alunoId}&valor=${valor}&vencimento=${vencimento}`, {
+        method: 'POST'
     })
-    .catch(err => {
-      console.error('Erro ao gerar boleto:', err);
-      alert('Erro ao gerar boleto.');
-    });
+        .then(res => {
+            if (res.ok) {
+                return res.json().then(data => {
+                    alert('Boleto gerado com sucesso!');
+                    listarTodasCobrancas();
+
+                    var modalEl = document.getElementById('modalGerarBoleto');
+                    var modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+
+                    document.getElementById('modalVencimento').value = '';
+                });
+            } else {
+                return res.text().then(text => {
+                    alert(text);
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Erro ao gerar boleto:', err);
+            alert('Erro ao gerar boleto.');
+        });
 });
 
 
